@@ -4,6 +4,7 @@ namespace RecorderFunctions
 {
     public class Person
     {
+        public string id { get; set; }
         public string Name { get; set; }
         public string Phone { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;

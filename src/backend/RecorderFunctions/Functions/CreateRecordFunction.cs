@@ -26,14 +26,19 @@ namespace RecorderFunctions
             )] IAsyncCollector<Person> people,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Creating a Person record.");
 
             try
             {
                 string requestBody = new StreamReader(req.Body).ReadToEnd();
                 var person = JsonConvert.DeserializeObject<Person>(requestBody);
                 await people.AddAsync(person);
-                return new OkObjectResult(person);
+                log.LogInformation("Person record created");
+                return new OkObjectResult(new
+                {
+                    Name = person.Name,
+                    CreatedAt = person.CreatedAt
+                });
             }
             catch (Exception ex)
             {

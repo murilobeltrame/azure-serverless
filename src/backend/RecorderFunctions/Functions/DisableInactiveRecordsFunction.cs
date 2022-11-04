@@ -5,6 +5,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace RecorderFunctions.Functions
 {
@@ -12,7 +13,7 @@ namespace RecorderFunctions.Functions
     {
         [FunctionName("DisableInactiveRecordsFunction")]
         public async Task Run(
-            [TimerTrigger("0 */5 * * * *")] TimerInfo myTimer,
+            [TimerTrigger("0 * * * * *")] TimerInfo myTimer,
             [CosmosDB(
                 databaseName: "Records",
                 collectionName: "People",
@@ -20,21 +21,22 @@ namespace RecorderFunctions.Functions
             )] DocumentClient client,
             ILogger log)
         {
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            log.LogInformation($"Disabling old people now, at: {DateTime.Now}");
 
             var collectionUri = UriFactory.CreateDocumentCollectionUri("Records", "People");
-            var query = client.CreateDocumentQuery<Person>(collectionUri)
-                .Where(w => w.CreatedAt < DateTime.Now.Subtract(TimeSpan.FromMinutes(5)))
+            var query = client.CreateDocumentQuery<Person>(collectionUri, new FeedOptions { EnableCrossPartitionQuery = true })
+                .Where(person => person.CreatedAt < DateTime.Now.Subtract(TimeSpan.FromMinutes(5)) && person.Active == true)
                 .AsDocumentQuery();
 
             while (query.HasMoreResults)
             {
-                foreach (var person in await query.ExecuteNextAsync())
+                foreach (var person in await query.ExecuteNextAsync<Person>())
                 {
+                    log.LogInformation($"Disabling {person.Name} with id {person.id}");
                     person.Active = false;
+                    await client.UpsertDocumentAsync(collectionUri, person);
                 }
             }
         }
     }
 }
-

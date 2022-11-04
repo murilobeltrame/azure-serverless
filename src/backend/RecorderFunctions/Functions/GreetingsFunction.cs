@@ -23,14 +23,15 @@ namespace RecorderFunctions.Functions
             )] IReadOnlyList<dynamic> people,
             ILogger log)
         {
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            log.LogInformation("Greeting for recently changed people.");
 
             var person = people.Last();
-            string personJson = JsonConvert.SerializeObject(person);
-            log.LogInformation(personJson);
+            var message = person.Active ?
+                 $"Wellcome aboard {person.Name}. U'r now recorded." :
+                 $"We are missing you {person.Name}";
             return new CreateMessageOptions(new PhoneNumber(person.Phone))
             {
-                Body = $"Wellcome aboard {person.Name}. U`r now recorded."
+                Body = message
             };
         }
     }
